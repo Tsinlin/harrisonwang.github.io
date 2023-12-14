@@ -1,10 +1,10 @@
 # Sample workflow for building and deploying a Jekyll site to GitHub Pages
-name: Deploy Jekyll with GitHub Pages dependencies preinstalled
+name: Deploy Jekyll Blog to Server
 
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["main"]
+    branches: ["main", "master"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -37,11 +37,13 @@ jobs:
         
       - name: Install Dependencies
         run: |
-          gem install jekyll github-pages
-          bundle install
+          gem install jekyll
+          gem install github-pages
+          bundle update
 
       - name: Build with Jekyll
-        run: JEKYLL_ENV=production bundle exec jekyll build
+        run: |
+          JEKYLL_ENV=production bundle exec jekyll build
         
       - name: Deploy to Server
         uses: appleboy/scp-action@master
