@@ -1,55 +1,37 @@
-# Sample workflow for building and deploying a Jekyll site to GitHub Pages
-name: Deploy Jekyll Blog to Server
+name: Deploy to Server
 
 on:
-  # Runs on pushes targeting the default branch
   push:
-    branches: ["main", "master"]
+    branches: ["main"]
 
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
-  # Build job
-  build:
+  deploy:
     runs-on: ubuntu-22.04
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@55283cc23133118229fd3f97f9336ee23a179fcf # v1.146.0
-        with:
-          ruby-version: 3.2
-          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
-        
-      - name: Install Dependencies
-        run: |
-          gem install jekyll
-          gem install github-pages
-          bundle update
+    - name: Set up Ruby and Bundler
+      uses: actions/setup-ruby@v1
+      with:
+        ruby-version: '3.2'
 
-      - name: Build with Jekyll
-        run: |
-          JEKYLL_ENV=production bundle exec jekyll build
-        
-      - name: Deploy to Server
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          source: '_site'
-          target: '/usr/share/nginx/html'
+    - name: Install Dependencies
+      run: |
+        gem install bundler
+        bundle install
+
+    - name: Build Jekyll Site
+      run: bundle exec jekyll build
+
+    - name: Deploy to Server
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        source: '_site'
+        target: '/usr/share/nginx/html'
