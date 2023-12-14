@@ -36,3 +36,4 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         source: '_site'
         target: '/usr/share/nginx/html'
+        strip-components: 1
