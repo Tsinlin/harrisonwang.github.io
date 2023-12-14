@@ -27,12 +27,21 @@ layout: default
 
 				{{ content }}
 
+                <blockquote
+                    style="margin:2em 0 0;padding:.5em 1em;border-left:3px solid #36a8f4;background-color:#f5f5f5;list-style:none">
+                    <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="知识共享许可协议" style="border-width:0"
+                            src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a>本作品采用<a rel="license"
+                        href="http://creativecommons.org/licenses/by-nc-sa/4.0/">知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议</a>进行许可。
+                        欢迎转载，并请注明来自：<a href="https://xiaowangye.org/">小王爷的博客</a>
+                    同时保持文章内容的完整和以上声明信息！
+                </blockquote>
+
                 <hr style="visibility: hidden;">
                 <ul class="pager">
                     {% if page.previous.url %}
                     <li class="previous">
                         <a href="{{ page.previous.url | prepend: site.baseurl | replace: '//', '/' }}" data-toggle="tooltip" data-placement="top" title="{{page.previous.title}}">
-                        Previous<br>
+                        上一篇<br>
                         <span>{{page.previous.title}}</span>
                         </a>
                     </li>
@@ -40,7 +49,7 @@ layout: default
                     {% if page.next.url %}
                     <li class="next">
                         <a href="{{ page.next.url | prepend: site.baseurl | replace: '//', '/' }}" data-toggle="tooltip" data-placement="top" title="{{page.next.title}}">
-                        Next<br>
+                        下一篇<br>
                         <span>{{page.next.title}}</span>
                         </a>
                     </li>
