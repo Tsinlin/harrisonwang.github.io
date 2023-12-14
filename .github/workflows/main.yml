@@ -17,7 +17,7 @@ jobs:
     - name: Set up Ruby and Bundler
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.2'
+        ruby-version: "3.2"
         bundler-cache: true
 
     - name: Install Dependencies
@@ -34,6 +34,5 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
-        source: '_site'
-        target: '/usr/share/nginx/html'
-        strip-components: 1
+        source: "_site/*"
+        target: "/usr/share/nginx/html"
