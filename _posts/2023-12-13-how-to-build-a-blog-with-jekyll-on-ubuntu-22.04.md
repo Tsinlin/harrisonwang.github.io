@@ -1,7 +1,7 @@
 ---
 layout:     post
-title:      如何基于 Jekyll 搭建个人博客？
-subtitle:   如何通过 GitHub 搭建基于 Jekyll 的个人博客？
+title:      如何基于 huxpro 搭建个人 GitHub 博客站点？
+subtitle:   如何使用个人主机和个人域名并基于 huxprox 搭建 GitHub 博客站点？
 date:       2023-12-13
 author:     小王爷
 # header-img: img/xxx.jpg
@@ -12,7 +12,159 @@ tags:
 ---
 
 
-## 1.环境准备
+## 1.基于 huxpro 搭建个人 GitHub 博客站点
+
+打开 https://github.com/huxpro/huxpro.github.io 开源的博客仓库，fork 到个人仓库：
+
+![image-20231213170224770](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231213170224770.png)
+
+修改仓库名称为 `GitHub账号.github.io`，然后点击 Create fork：
+
+![image-20231213171641230](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231213171641230.png)
+
+Fork 完成后仓库如下：
+
+![image-20231213172026644](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231213172026644.png)
+
+Fork 完成后等待站点完成发布，最长可能需要 10 分钟才会发布，也可以通过 Github Actions 手动发布：
+![image-20231215090728360](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215090728360.png)
+
+发布完成后，我们可通过 `user.github.io` 地址访问，如我的 GitHub 站点地址为 https://harrisonwang.github.io：
+
+![image-20231215090926040](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215090926040.png)
+
+到此，基于 Github 的个人博客已搭建完成。
+
+总结下，首先我们需要 fork 博客仓库模板 https://github.com/huxpro/huxpro.github.io 到自己仓库，然后修改仓库名称为 `<user>.github.io`，接着等待站点自动发布或者通过 Github Actions 手动完成发布，最后我们通过 `https://<user>.github.io` 即可成功访问。
+
+## 2.使用个人域名
+
+DNS 添加一条 **CNAME** 记录，例如我将 **harrisonwang.github.io** 个人博客站点绑定到个人域名 **xiaowangye.org**：
+
+![image-20231215092737042](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215092737042.png)
+
+修改 GitHub 仓库下的 **CNAME** 文件，修改为个人域名 **xiaowangye.org**：
+
+![image-20231215092240283](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215092240283.png)
+
+至此，GitHub 使用个人域名的配置已完成，我们可通过个人域名 **xiaowang.org** 访问到 GitHub 的个人博客站点。
+
+## 3.使用个人域名和个人主机
+
+有时候上面的方式可能无法满足我们的需求，这时候我们就需要使用个人主机和个人域名了，我们可以利用 GitHub Actions 的持续构建和持续发布能力，将博客文章自动发布到个人主机上。
+
+首先，我们需要将个人主机的 IP、主机用户名和主机公钥添加到 GitHub：
+
+![image-20231215093911452](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215093911452.png)
+
+**SERVER_SSH_KEY** 需要在个人主机上生成，可通过下面的命令生成：
+
+```bash
+$ ssh-keygen -t rsa -b 4096 -C "harrisonwang@163.com"
+```
+
+使用 `cat ~/.ssh/id_rsa.pub` 命令查看公钥内容如下图：
+
+![image-20231215094522228](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215094522228.png)
+
+将个人主机生成的公钥内容设置到 **SERVER_SSH_KEY**：
+
+![image-20231215095057229](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215095057229.png)
+
+然后，然后我们需要在 GitHub Actions 上添加一个 workflow，用于持续构建并发布到目标个人主机。进入 Actions 页面点击 new workflow 新建：
+
+![image-20231215095441485](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215095441485.png)
+
+以下是我编写的 workflow 脚本，用于将 GitHub 代码构建并发布至目标个人主机：
+
+{% raw %}
+
+```yaml
+name: Deploy to Server
+
+on:
+  push:
+    branches: ["main"]
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Ruby and Bundler
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: "3.2"
+        bundler-cache: true
+
+    - name: Install Dependencies
+      run: |
+        gem install bundler
+        bundle install
+
+    - name: Build Jekyll Site
+      run: bundle exec jekyll build
+
+    - name: Deploy to Server
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        source: "_site/*"
+        target: "/usr/share/nginx/html"
+        strip_components: 1
+```
+
+{% endraw %}
+
+> 1. [appleboy/scp-action 用法参考](https://github.com/appleboy/scp-action)
+>
+> 2. [ruby/setup-ruby 用法参考](https://github.com/ruby/setup-ruby)
+
+此处的 `strip_components: 1` 指不包含 `_site` 目录，只拷贝其下面的文件和目录。 
+
+接着我们运行 workflow 进行自动构建和发布：
+
+![image-20231215100241948](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215100241948.png)
+
+发布完成后，我们登录个人主机，可查看到 GitHub 自动发布的站点：
+
+```bash
+$ cd /usr/share/nginx/html/
+$ ll
+total 136
+drwxr-xr-x 11 root      root  4096 Dec 14 06:06 ./
+drwxr-xr-x  4 root      root  4096 Dec 12 08:17 ../
+drwxr-xr-x  2 linuxuser  127  4096 Dec 14 06:06 2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro/
+-rw-r--r--  1 linuxuser  127 16330 Dec 14 06:06 404.html
+drwxr-xr-x  2 linuxuser  127  4096 Dec 14 06:06 about/
+drwxr-xr-x  2 linuxuser  127  4096 Dec 14 06:06 archive/
+-rw-r--r--  1 linuxuser  127    15 Dec 14 06:06 CNAME
+drwxr-xr-x  2 linuxuser  127  4096 Dec 14 06:06 css/
+-rw-r--r--  1 linuxuser  127 15249 Dec 14 06:06 feed.xml
+drwxr-xr-x  2 linuxuser  127  4096 Dec 14 06:06 fonts/
+drwxr-xr-x  3 linuxuser  127  4096 Dec 14 06:06 images/
+drwxr-xr-x  3 linuxuser  127  4096 Dec 14 06:06 img/
+-rw-r--r--  1 linuxuser  127 19505 Dec 14 06:06 index.html
+drwxr-xr-x  2 linuxuser  127  4096 Dec 14 06:06 js/
+-rw-r--r--  1 linuxuser  127 16357 Dec 14 06:06 offline.html
+drwxr-xr-x  3 linuxuser  127  4096 Dec 14 06:06 pwa/
+-rw-r--r--  1 linuxuser  127  1732 Dec 14 06:06 Rakefile
+-rw-r--r--  1 linuxuser  127   334 Dec 14 06:06 search.json
+-rw-r--r--  1 linuxuser  127  9782 Dec 14 06:06 sw.js
+```
+
+至此，我们已成功使用个人域名和个人主机完成 GitHub 个人博客的自动发布。
+
+## 4.本地调试
+
+### 4.1.环境准备
 
 安装 Ruby：
 
@@ -48,27 +200,13 @@ $ gem sources -u
 安装 Jekyll 和 Bundler ：
 
 ```bash
-# 查看安装日志
+# 安装并查看显示日志
 $ gem install jekyll --verbose
 
-$ gem install jekyll bundler
+$ gem install bundler
 ```
 
-## 2.Fork 仓库
-
-打开 https://github.com/qiubaiying/qiubaiying.github.io 开源的博客仓库，fork 到个人仓库：
-
-![image-20231213170224770](../images/2023-12-13-how-to-build-a-blog-with-jekyll-on-ubuntu-22.04.assets/image-20231213170224770.png)
-
-修改仓库名称为 `GitHub账号.github.io`，然后点击 Create fork：
-
-![image-20231213171641230](../images/2023-12-13-how-to-build-a-blog-with-jekyll-on-ubuntu-22.04.assets/image-20231213171641230.png)
-
-Fork 完成后仓库如下：
-
-![image-20231213172026644](../images/2023-12-13-how-to-build-a-blog-with-jekyll-on-ubuntu-22.04.assets/image-20231213172026644.png)
-
-## 3.本地调试
+### 4.2.克隆代码仓库
 
 克隆代码仓库到本地：
 
@@ -84,55 +222,20 @@ $ jekyll s
 
 打开 http://127.0.0.1:4000/ 地址预览效果如下：
 
-![image-20231213172751111](../images/2023-12-13-how-to-build-a-blog-with-jekyll-on-ubuntu-22.04.assets/image-20231213172751111.png)
+![image-20231215104645126](../img/2023-12-13-how-to-build-a-blog-with-jekyll-on-ubuntu-22.04.assets/image-20231215104645126.png)
 
-可以看到首页文章列表未显示，这是因为此博客仓库是基于 Jekyll 2 开始构建的，当时 `jekyll-paginate` 已成为标准。对于 Jekyll 4，它只是一个插件，所以我们需要配置和安装它。编辑 _config.yml 文件，添加 `jekyll-paginate` 插件配置：
+## 5.使用 Typora 编写文章
+
+我们在使用 Typora 写文章时，会碰到图片路径无法在网页正常显示的问题，具体参见：[GitHub 博客图片路径配置](https://husthuangkai.github.io/2019-11-23-github%E5%8D%9A%E5%AE%A2%E5%9B%BE%E7%89%87%E8%B7%AF%E5%BE%84%E9%85%8D%E7%BD%AE%E9%97%AE%E9%A2%98/)。
+
+按照文章思路，我们首先将 `_config.yml` 的 **permalink** 配置项修改为：
 
 ```yaml
-plugins: [jekyll-paginate]
+permalink: /:year-:month-:day-:title/
 ```
 
-然后，使用以下命令安装该 `jekyll-paginate` 插件：
+然后，我们到 Typora 中将图像路径设置为 `../img/${filename}.assets/`，设置见下图：
 
-```bash
-$ sudo gem install jekyll-paginate
-```
+![image-20231215105308214](../img/2023-12-13-how-to-build-a-blog-with-jekyll-on-ubuntu-22.04.assets/image-20231215105308214.png)
 
-我们使用 `jekyll s` 命令重启后，强制刷新下页面，可以看到首页文章已能正常显示。
-
-![image-20231213175301847](../img/2023-12-13-how-to-build-a-blog-with-jekyll-on-ubuntu-22.04.assets/image-20231213175301847.png)
-
-## 4.问题
-
-`jekyll s` 命令启动时，`_layouts` 文件夹下的 `post.html` 和 `page.html` 会报类似如下错误信息：
-
-```bash
-$ jekyll s
-Configuration file: /home/wss/project/harrisonwang.github.io/_config.yml
-            Source: /home/wss/project/harrisonwang.github.io
-       Destination: /home/wss/project/harrisonwang.github.io/_site
- Incremental build: disabled. Enable with --incremental
-      Generating... 
-    Liquid Warning: Liquid syntax error (line 145): Unexpected character { in "tag[1].size > {{site.featured-condition-size}}" in /home/wss/project/harrisonwang.github.io/_layouts/post.html
-    Liquid Warning: Liquid syntax error (line 38): Unexpected character { in "tag[1].size > {{site.featured-condition-size}}" in /home/wss/project/harrisonwang.github.io/_layouts/page.html
-    Liquid Warning: Liquid syntax error (line 87): Unexpected character { in "tag[1].size > {{site.featured-condition-size}}" in /home/wss/project/harrisonwang.github.io/_layouts/page.html
-                    done in 0.141 seconds.
- Auto-regeneration: enabled for '/home/wss/project/harrisonwang.github.io'
-    Server address: http://127.0.0.1:4000/
-  Server running... press ctrl-c to stop.
-```
-
-根据提示信息，我们定位到 `post.html` 中的第 145 行，以及 `page.html` 中的第 38 和 87 行，找到下面的代码，将其中的双层花括号删除：
-
-```
-tag[1].size > {{site.featured-condition-size}}
-```
-
-改为：
-
-```
-tag[1].size > site.featured-condition-size
-```
-
-## 5.Typora 写文章图片路径问题
-
+至此，我们就能方便的在 Typora 中编写文章了。
