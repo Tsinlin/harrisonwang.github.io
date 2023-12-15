@@ -14,11 +14,11 @@ tags:
 
 ## 1.基于 huxpro 搭建个人 GitHub 博客站点
 
-打开 https://github.com/huxpro/huxpro.github.io 开源的博客仓库，fork 到个人仓库：
+打开 [https://github.com/huxpro/huxpro.github.io](https://github.com/huxpro/huxpro.github.io) 开源的博客仓库，fork 到个人仓库：
 
 ![image-20231213170224770](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231213170224770.png)
 
-修改仓库名称为 `GitHub账号.github.io`，然后点击 Create fork：
+修改仓库名称为 `<user>.github.io`，然后点击 Create fork：
 
 ![image-20231213171641230](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231213171641230.png)
 
@@ -29,13 +29,13 @@ Fork 完成后仓库如下：
 Fork 完成后等待站点完成发布，最长可能需要 10 分钟才会发布，也可以通过 Github Actions 手动发布：
 ![image-20231215090728360](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215090728360.png)
 
-发布完成后，我们可通过 `user.github.io` 地址访问，如我的 GitHub 站点地址为 https://harrisonwang.github.io：
+发布完成后，我们可通过 `<user>.github.io` 地址访问，如 [https://harrisonwang.github.io](https://harrisonwang.github.io)：
 
 ![image-20231215090926040](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215090926040.png)
 
 到此，基于 Github 的个人博客已搭建完成。
 
-总结下，首先我们需要 fork 博客仓库模板 https://github.com/huxpro/huxpro.github.io 到自己仓库，然后修改仓库名称为 `<user>.github.io`，接着等待站点自动发布或者通过 Github Actions 手动完成发布，最后我们通过 `https://<user>.github.io` 即可成功访问。
+总结下，首先我们需要 fork 博客仓库模板 [https://github.com/huxpro/huxpro.github.io](https://github.com/huxpro/huxpro.github.io) 到自己仓库，然后修改仓库名称为 `<user>.github.io`，接着等待站点自动发布或者通过 Github Actions 手动完成发布，最后我们通过 `https://<user>.github.io` 即可成功访问。
 
 ## 2.使用个人域名
 
@@ -53,21 +53,46 @@ DNS 添加一条 **CNAME** 记录，例如我将 **harrisonwang.github.io** 个�
 
 有时候上面的方式可能无法满足我们的需求，这时候我们就需要使用个人主机和个人域名了，我们可以利用 GitHub Actions 的持续构建和持续发布能力，将博客文章自动发布到个人主机上。
 
-首先，我们需要将个人主机的 IP、主机用户名和主机公钥添加到 GitHub：
+首先，我们需要将个人主机的 IP、主机用户名和主机私钥添加到 GitHub：
 
 ![image-20231215093911452](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215093911452.png)
 
 **SERVER_SSH_KEY** 需要在个人主机上生成，可通过下面的命令生成：
 
 ```bash
-$ ssh-keygen -t rsa -b 4096 -C "harrisonwang@163.com"
+$ ssh-keygen -t rsa -b 4096 -C "harrisonwang@163.com" -f github-deploy-key
 ```
 
-使用 `cat ~/.ssh/id_rsa.pub` 命令查看公钥内容如下图：
+查看 `.ssh` 目录，可以看到生成了一个公钥 **github-deploy-key.pub** 和私钥文件 **github-deploy-key**：
 
-![image-20231215094522228](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215094522228.png)
+```bash
+$ ll ~/.ssh/
+total 20
+drwx------ 2 root root 4096 Dec 15 03:12 ./
+drwx------ 8 root root 4096 Dec 15 03:11 ../
+-rw------- 1 root root  746 Dec 15 03:11 authorized_keys
+-rw------- 1 root root 3389 Dec 15 03:10 github-deploy-key
+-rw-r--r-- 1 root root  746 Dec 15 03:10 github-deploy-key.pub
+```
 
-将个人主机生成的公钥内容设置到 **SERVER_SSH_KEY**：
+然后，我们将 公钥文件内容追加到 **authorized_keys** 文件里：
+
+```bash
+cat ~/.ssh/github-deploy-key.pub >> ~/.ssh/authorized_keys
+```
+
+
+
+查看 `cat ~/.ssh/github-deploy-key` 文件内容：
+
+```bash
+$ cat github-deploy-key
+-----BEGIN OPENSSH PRIVATE KEY-----
+...
+-----END OPENSSH PRIVATE KEY-----
+```
+
+将个人主机生成的私钥内容设置到 **SERVER_SSH_KEY**：
 
 ![image-20231215095057229](../img/2023-12-13-how-to-build-your-own-github-blog-site-with-huxpro.assets/image-20231215095057229.png)
 
