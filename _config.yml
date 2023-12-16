@@ -84,7 +84,7 @@ netease_comment: false
 # ba_track_id: [your track id]
 
 # Google Analytics
-ga_track_id: "UA-49627206-1" # Format: UA-xxxxxx-xx
+ga_track_id: "G-P5XH4X1J46" # Format: UA-xxxxxx-xx
 ga_domain: xiaowangye.org
 
 # Sidebar settings
